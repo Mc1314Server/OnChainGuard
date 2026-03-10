@@ -1,0 +1,27 @@
+{
+  "name": "onchainguard",
+  "version": "1.0.0",
+  "description": "AI 链上侦探 & Meme 币安全扫描器 - 专为 OpenClaw AI Agent 设计",
+  "main": "onchainguard.js",
+  "bin": {
+    "onchainguard": "./onchainguard.js"
+  },
+  "scripts": {
+    "start": "node onchainguard.js"
+  },
+  "keywords": [
+    "blockchain",
+    "security",
+    "meme",
+    "detective",
+    "onchain",
+    "openclaw",
+    "ai-agent"
+  ],
+  "author": "Mc1314Server",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mc1314Server/OnChainGuard.git"
+  }
+}
