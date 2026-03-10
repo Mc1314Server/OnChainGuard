@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI On-chain Detective & Meme Coin Scanner</title>
+<style>
+:root {
+    --bg: #0a0e17;
+    --bg2: #111827;
+    --bg3: #1a2332;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --orange: #f97316;
+    --text: #e5e7eb;
+    --text2: #9ca3af;
+    --border: #374151;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+}
+.header {
+    background: linear-gradient(135deg, var(--bg2), var(--bg3));
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    font-weight: 700;
+}
+.logo svg { width: 32px; height: 32px; }
+.nav { display: flex; gap: 4px; }
+.nav-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+.nav-btn.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    font-weight: 600;
+}
+.nav-btn:hover:not(.active) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+.section { display: none; }
+.section.active { display: block; }
+.card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.input-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+input, select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+input:focus, select:focus { border-color: var(--accent); }
+input::placeholder { color: var(--text2); }
+.btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+}
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 768px) {
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+}
+.stat-card {
+    background: var(--bg3);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+}
+.stat-value { font-size: 24px; font-weight: 700; margin: 4px 0; }
+.stat-label { font-size: 12px; color: var(--text2); }
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.badge-green { background: rgba(16,185,129,0.15); color: var(--green); }
+.badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+.badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+.badge-orange { background: rgba(249,115,22,0.15); color: var(--orange); }
+.badge-blue { background: rgba(0,212,255,0.15); color: var(--accent); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 10px 12px; color: var(--text2); font-weight: 500; border-bottom: 1px solid var(--border); }
+td { padding: 10px 12px; border-bottom: 1px solid rgba(55,65,81,0.5); }
+tr:hover td { background: rgba(0,212,255,0.03); }
+.addr {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--accent);
+    cursor: pointer;
+}
+.addr:hover { text-decoration: underline; }
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--text2);
+}
+.spinner {
+    width: 24px; height: 24px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { text-align: center; padding: 40px; color: var(--text2); }
+.progress-bar {
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+}
+.risk-meter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+}
+.risk-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.flow-graph {
+    background: var(--bg);
+    border-radius: 8px;
+    min-height: 300px;
+    position: relative;
+    overflow: hidden;
+}
+.flow-node {
+    position: absolute;
+    background: var(--bg2);
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    z-index: 2;
+    max-width: 160px;
+    text-align: center;
+}
+.flow-node.suspicious { border-color: var(--red); }
+.flow-node.exchange { border-color: var(--green); }
+.flow-node.mixer { border-color: var(--yellow); }
+.flow-line {
+    position: absolute;
+    height: 2px;
+    background: var(--accent);
+    transform-origin: left center;
+    z-index: 1;
+    opacity: 0.5;
+}
+.flow-line.suspicious { background: var(--red); }
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab {
+    padding: 6px 16px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.tab.active {
+    background: var(--bg3);
+    color: var(--text);
+    border-color: var(--accent);
+}
+.token-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid rgba(55,65,81,0.5);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.token-row:hover { background: rgba(0,212,255,0.05); }
+.token-icon {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--bg3);
+    flex-shrink: 0;
+}
+.token-name { font-weight: 600; font-size: 14px; }
+.token-symbol { color: var(--text2); font-size: 12px; }
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    margin: 2px;
+}
+.report-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.hero {
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(180deg, rgba(0,212,255,0.05) 0%, transparent 100%);
+    border-radius: 16px;
+    margin-bottom: 24px;
+}
+.hero h1 { font-size: 32px; margin-bottom: 8px; }
+.hero p { color: var(--text2); font-size: 16px; }
+.chain-select { min-width: 120px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.small { font-size: 12px; color: var(--text2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">
+        <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="15" stroke="var(--accent)" stroke-width="2"/><path d="M10 16l4 4 8-8" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>OnChain<span style="color:var(--accent)">Guard</span></span>
+    </div>
+    <div class="nav">
+        <button class="nav-btn active" onclick="switchSection('detective')" data-i18n="nav.detective">AI 链上侦探</button>
+        <button class="nav-btn" onclick="switchSection('scanner')" data-i18n="nav.scanner">Meme 币安全扫描</button>
+        <button id="lang-toggle" class="nav-btn" onclick="toggleLanguage()" style="min-width:50px;margin-left:8px">EN</button>
+    </div>
+</div>
+
+<!-- ===== SECTION 1: AI ON-CHAIN DETECTIVE ===== -->
+<div class="container">
+<div id="section-detective" class="section active">
+    <div class="hero">
+        <h1 data-i18n="detective.title">AI 链上侦探</h1>
+        <p data-i18n="detective.desc">追踪黑客/诈骗资金流向，监控可疑地址，追踪转账路径，生成调查报告</p>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--accent)"><path d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001l3.85 3.85a1 1 0 001.415-1.414l-3.867-3.834zm-5.242.156a5 5 0 110-10 5 5 0 010 10z"/></svg>
+            <span data-i18n="detective.cardTitle">可疑地址调查</span>
+        </div>
+        <div class="input-group">
+            <input type="text" id="detective-address" data-i18n-placeholder="detective.placeholder" placeholder="输入可疑钱包地址 (0x... 或 Solana 地址)" style="flex:1">
+            <select id="detective-chain" class="chain-select">
+                <option value="ethereum">Ethereum</option>
+                <option value="solana">Solana</option>
+                <option value="bsc">BSC</option>
+                <option value="base">Base</option>
+                <option value="arbitrum">Arbitrum</option>
+                <option value="polygon">Polygon</option>
+                <option value="tron">Tron</option>
+                <option value="avalanche">Avalanche</option>
+            </select>
+            <select id="detective-depth" style="min-width:90px">
+                <option value="1" data-i18n="detective.depth1">深度 1</option>
+                <option value="2" selected data-i18n="detective.depth2">深度 2</option>
+                <option value="3" data-i18n="detective.depth3">深度 3</option>
+            </select>
+            <button class="btn" onclick="investigateWallet()" id="btn-investigate" data-i18n="detective.startBtn">开始调查</button>
+            <button class="btn btn-outline" onclick="addToWatchlist()" style="padding:10px 12px" data-i18n="detective.watchBtn">+监控</button>
+        </div>
+        <div class="small" data-i18n="detective.hint">粘贴任何可疑/黑客钱包地址，追踪多跳资金流向和关联地址</div>
+        <div id="investigate-progress" style="display:none;margin-top:12px">
+            <div class="progress-bar"><div class="progress-fill" id="investigate-progress-fill" style="width:0%;background:var(--accent)"></div></div>
+            <div class="small" id="investigate-progress-text" style="margin-top:4px"></div>
+        </div>
+    </div>
+
+    <!-- Watchlist -->
+    <div class="card" id="watchlist-card" style="display:none">
+        <div class="flex-between" style="margin-bottom:12px">
+            <div class="card-title" style="margin-bottom:0" data-i18n="detective.watchlist">监控列表</div>
+            <button class="btn btn-sm btn-outline" onclick="refreshWatchlist()" data-i18n="detective.refresh">刷新</button>
+        </div>
+        <div id="watchlist-entries"></div>
+    </div>
+
+    <div id="detective-results" style="display:none">
+        <!-- Summary Stats -->
+        <div id="detective-summary" class="grid3" style="margin-bottom:16px"></div>
+
+        <!-- Risk Assessment -->
+        <div class="card">
+            <div class="card-title" data-i18n="detective.riskAssessment">风险评估</div>
+            <div id="risk-assessment"></div>
+        </div>
+
+        <!-- Fund Flow Graph -->
+        <div class="card">
+            <div class="flex-between" style="margin-bottom:12px">
+                <div class="card-title" style="margin-bottom:0" data-i18n="detective.flowGraph">资金流向图</div>
+                <div style="display:flex;gap:6px">
+                    <button class="btn btn-sm btn-outline" onclick="resetGraphView()" data-i18n="detective.resetView">重置视图</button>
+                    <button class="btn btn-sm btn-outline" onclick="exportReport()" data-i18n="detective.exportReport">导出报告</button>
+                </div>
+            </div>
+            <div class="flow-graph" style="min-height:500px;position:relative">
+                <canvas id="flow-canvas" style="width:100%;height:500px;cursor:grab"></canvas>
+            </div>
+            <div id="graph-legend" style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
+                <span class="small"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--yellow);margin-right:4px"></span><span data-i18n="legend.target">目标</span></span>
+                <span class="small"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--red);margin-right:4px"></span><span data-i18n="legend.whale">巨鲸 / 大额</span></span>
+                <span class="small"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--orange);margin-right:4px"></span><span data-i18n="legend.frequent">频繁交易者</span></span>
+                <span class="small"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent);margin-right:4px"></span><span data-i18n="legend.connected">关联地址</span></span>
+                <span class="small"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#6366f1;margin-right:4px"></span><span data-i18n="legend.hop2">二级关联</span></span>
+                <span class="small"><span style="display:inline-block;width:10px;height:3px;background:var(--green);margin-right:4px;vertical-align:middle"></span><span data-i18n="legend.buy">买入</span></span>
+                <span class="small"><span style="display:inline-block;width:10px;height:3px;background:var(--red);margin-right:4px;vertical-align:middle"></span><span data-i18n="legend.sell">卖出</span></span>
+            </div>
+            <div id="graph-tooltip" style="display:none;position:fixed;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;z-index:100;max-width:280px;pointer-events:none"></div>
+        </div>
+
+        <!-- Transfer Timeline -->
+        <div class="card">
+            <div class="flex-between" style="margin-bottom:12px">
+                <div class="card-title" style="margin-bottom:0" data-i18n="detective.timeline">交易时间线</div>
+                <div class="small" id="timeline-count"></div>
+            </div>
+            <div class="tabs" id="timeline-tabs">
+                <button class="tab active" onclick="filterTimeline('all',this)" data-i18n="detective.all">全部</button>
+                <button class="tab" onclick="filterTimeline('buy',this)" data-i18n="detective.buys">买入</button>
+                <button class="tab" onclick="filterTimeline('sell',this)" data-i18n="detective.sells">卖出</button>
+            </div>
+            <div id="transfer-timeline" style="max-height:400px;overflow-y:auto"></div>
+        </div>
+
+        <!-- Connected Addresses -->
+        <div class="card">
+            <div class="card-title" data-i18n="detective.connectedAddr">关联地址分析</div>
+            <div id="connected-addresses"></div>
+        </div>
+
+        <!-- Wallet Holdings -->
+        <div class="grid2">
+            <div class="card">
+                <div class="card-title" data-i18n="detective.holdings">目标钱包持仓</div>
+                <div id="wallet-tokens" style="max-height:350px;overflow-y:auto"></div>
+            </div>
+            <div class="card">
+                <div class="card-title" data-i18n="detective.signals">聪明钱信号</div>
+                <div id="signals-section" style="max-height:350px;overflow-y:auto"></div>
+            </div>
+        </div>
+
+        <!-- Investigation Report -->
+        <div class="card">
+            <div class="flex-between" style="margin-bottom:12px">
+                <div class="card-title" style="margin-bottom:0" data-i18n="detective.report">调查报告</div>
+                <button class="btn btn-sm" onclick="exportReport()" data-i18n="detective.downloadReport">下载报告</button>
+            </div>
+            <div id="investigation-report"></div>
+        </div>
+    </div>
+
+    <div id="detective-loading" class="loading" style="display:none">
+        <div class="spinner"></div>
+        <span id="detective-loading-text" data-i18n="detective.loading">正在调查钱包活动...</span>
+    </div>
+</div>
+
+<!-- ===== SECTION 2: MEME COIN SECURITY SCANNER ===== -->
+<div id="section-scanner" class="section">
+    <div class="hero">
+        <h1 data-i18n="scanner.title">Meme 币安全扫描器</h1>
+        <p data-i18n="scanner.desc">实时安全扫描新代币 - 秒级检测 Rug Pull、蜜罐、狙击手</p>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="var(--accent)"><path d="M8 0L6.59 1.41 12.17 7H0v2h12.17l-5.58 5.59L8 16l8-8-8-8z"/></svg>
+            <span data-i18n="scanner.cardTitle">扫描代币</span>
+        </div>
+        <div class="input-group">
+            <input type="text" id="meme-address" data-i18n-placeholder="scanner.placeholder" placeholder="输入代币合约地址" style="flex:1">
+            <select id="meme-chain" class="chain-select">
+                <option value="solana">Solana</option>
+                <option value="bsc">BSC</option>
+                <option value="ethereum">Ethereum</option>
+                <option value="base">Base</option>
+            </select>
+            <button class="btn" onclick="scanToken()" id="btn-scan" data-i18n="scanner.scanBtn">立即扫描</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-sm btn-outline" onclick="loadNewMemes()" data-i18n="scanner.browseNew">浏览新代币</button>
+            <button class="btn btn-sm btn-outline" onclick="loadMigratingMemes()" data-i18n="scanner.migrating">迁移中的代币</button>
+            <button class="btn btn-sm btn-outline" onclick="loadMigratedMemes()" data-i18n="scanner.migrated">已迁移代币</button>
+        </div>
+    </div>
+
+    <div id="meme-list-card" class="card" style="display:none">
+        <div class="flex-between">
+            <div class="card-title" id="meme-list-title" data-i18n="scanner.newMeme">新 Meme 代币</div>
+            <div class="small" id="meme-list-count"></div>
+        </div>
+        <div id="meme-list" style="max-height:500px;overflow-y:auto"></div>
+    </div>
+
+    <div id="scan-loading" class="loading" style="display:none">
+        <div class="spinner"></div>
+        <span data-i18n="scanner.loading">正在执行安全分析...</span>
+    </div>
+
+    <div id="scan-results" style="display:none">
+        <div class="grid2">
+            <div class="card">
+                <div class="card-title" data-i18n="scanner.securityScore">安全评分</div>
+                <div id="security-score"></div>
+            </div>
+            <div class="card">
+                <div class="card-title" data-i18n="scanner.tokenOverview">代币概览</div>
+                <div id="token-overview"></div>
+            </div>
+        </div>
+
+        <div class="grid3">
+            <div class="card">
+                <div class="card-title" data-i18n="scanner.devAnalysis">开发者分析</div>
+                <div id="dev-analysis"></div>
+            </div>
+            <div class="card">
+                <div class="card-title" data-i18n="scanner.bundleDetection">捆绑 / 狙击手检测</div>
+                <div id="bundle-analysis"></div>
+            </div>
+            <div class="card">
+                <div class="card-title" data-i18n="scanner.similarTokens">同一开发者的类似代币</div>
+                <div id="similar-tokens"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title" data-i18n="scanner.holderRisks">持有者分布与风险标记</div>
+            <div id="holder-risks"></div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script src="i18n.js"></script>
+<script src="detective.js"></script>
+<script>
+function switchSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('section-' + id).classList.add('active');
+    event.target.classList.add('active');
+}
+
+function shortAddr(addr) {
+    if (!addr) return '---';
+    if (addr.length > 12) return addr.slice(0, 6) + '...' + addr.slice(-4);
+    return addr;
+}
+
+function fmtUsd(val) {
+    const n = parseFloat(val);
+    if (isNaN(n)) return '$0.00';
+    if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return '$' + (n/1e3).toFixed(2) + 'K';
+    return '$' + n.toFixed(2);
+}
+
+function fmtPrice(val) {
+    const n = parseFloat(val);
+    if (isNaN(n)) return '$0';
+    if (n < 0.00001) return '$' + n.toExponential(2);
+    if (n < 1) return '$' + n.toPrecision(4);
+    return '$' + n.toFixed(2);
+}
+
+function fmtPct(val) {
+    const n = parseFloat(val);
+    if (isNaN(n)) return '0%';
+    return n.toFixed(1) + '%';
+}
+
+function pctColor(val) {
+    const n = parseFloat(val);
+    if (n > 0) return 'var(--green)';
+    if (n < 0) return 'var(--red)';
+    return 'var(--text2)';
+}
+
+async function api(url) {
+    const res = await fetch(url);
+    return res.json();
+}
+
+async function apiPost(url, body) {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    return res.json();
+}
+
+// Detective module loaded from detective.js
+
+// ===== MEME SCANNER =====
+
+async function loadMemeTokens(stage) {
+    const chain = document.getElementById('meme-chain').value;
+    document.getElementById('meme-list-card').style.display = 'block';
+    document.getElementById('meme-list-title').textContent = stage + ' Meme Tokens';
+    document.getElementById('meme-list').innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
+
+    try {
+        const result = await api(`/api/meme/tokens?chain=${chain}&stage=${stage}`);
+        const tokens = result.data || [];
+        document.getElementById('meme-list-count').textContent = `${Array.isArray(tokens) ? tokens.length : 0} tokens found`;
+
+        if (!Array.isArray(tokens) || tokens.length === 0) {
+            document.getElementById('meme-list').innerHTML = '<div class="empty">No tokens found</div>';
+            return;
+        }
+
+        let html = '';
+        tokens.forEach(t => {
+            const tags = t.tags || {};
+            const devPct = parseFloat(tags.devHoldingsPercent || 0);
+            const bundlerPct = parseFloat(tags.bundlersPercent || 0);
+            const sniperPct = parseFloat(tags.snipersPercent || 0);
+            const isRisky = devPct > 10 || bundlerPct > 20 || sniperPct > 15;
+
+            html += `<div class="token-row" onclick="scanSpecificToken('${t.tokenAddress}','${chain}')">
+                <img class="token-icon" src="${t.logoUrl || ''}" onerror="this.style.background='var(--bg3)';this.removeAttribute('src')">
+                <div style="flex:1;min-width:0">
+                    <div class="token-name">${t.symbol || t.name || '???'}</div>
+                    <div class="token-symbol">${shortAddr(t.tokenAddress)}</div>
+                </div>
+                <div style="text-align:right;min-width:80px">
+                    <div style="font-size:13px;font-weight:600">${fmtUsd(t.market?.marketCapUsd)}</div>
+                    <div class="small">MCap</div>
+                </div>
+                <div style="text-align:right;min-width:60px">
+                    <div style="font-size:13px">${fmtPct(t.bondingPercent)}</div>
+                    <div class="small">Bonding</div>
+                </div>
+                <div style="min-width:80px;text-align:right">
+                    ${isRisky ? '<span class="badge badge-red">RISKY</span>' : '<span class="badge badge-green">OK</span>'}
+                    ${devPct > 10 ? `<span class="tag" style="background:rgba(239,68,68,0.1);color:var(--red)">Dev:${fmtPct(devPct)}</span>` : ''}
+                </div>
+            </div>`;
+        });
+
+        document.getElementById('meme-list').innerHTML = html;
+    } catch (e) {
+        document.getElementById('meme-list').innerHTML = '<div class="empty">Failed to load tokens</div>';
+    }
+}
+
+function loadNewMemes() { loadMemeTokens('NEW'); }
+function loadMigratingMemes() { loadMemeTokens('MIGRATING'); }
+function loadMigratedMemes() { loadMemeTokens('MIGRATED'); }
+
+function scanSpecificToken(address, chain) {
+    document.getElementById('meme-address').value = address;
+    document.getElementById('meme-chain').value = chain;
+    scanToken();
+}
+
+async function scanToken() {
+    const address = document.getElementById('meme-address').value.trim();
+    const chain = document.getElementById('meme-chain').value;
+    if (!address) return alert('Please enter a token address');
+
+    document.getElementById('scan-results').style.display = 'none';
+    document.getElementById('scan-loading').style.display = 'flex';
+    document.getElementById('btn-scan').disabled = true;
+
+    try {
+        const [details, devInfo, bundleInfo, similar] = await Promise.all([
+            api(`/api/meme/token-details?address=${address}&chain=${chain}`),
+            api(`/api/meme/dev-info?address=${address}&chain=${chain}`),
+            api(`/api/meme/bundle-info?address=${address}&chain=${chain}`),
+            api(`/api/meme/similar-tokens?address=${address}&chain=${chain}`)
+        ]);
+
+        renderSecurityScore(details, devInfo, bundleInfo);
+        renderTokenOverview(details);
+        renderDevAnalysis(devInfo);
+        renderBundleAnalysis(bundleInfo);
+        renderSimilarTokens(similar);
+        renderHolderRisks(details);
+
+        document.getElementById('scan-results').style.display = 'block';
+    } catch (e) {
+        alert('Scan failed: ' + e.message);
+    } finally {
+        document.getElementById('scan-loading').style.display = 'none';
+        document.getElementById('btn-scan').disabled = false;
+    }
+}
+
+function renderSecurityScore(details, devInfo, bundleInfo) {
+    const d = details.data || {};
+    const tags = d.tags || {};
+    const dev = devInfo.data?.devLaunchedInfo || {};
+    const bundle = bundleInfo.data || {};
+
+    let score = 100;
+    const warnings = [];
+    const dangers = [];
+
+    const devPct = parseFloat(tags.devHoldingsPercent || 0);
+    const top10Pct = parseFloat(tags.top10HoldingsPercent || 0);
+    const insiderPct = parseFloat(tags.insidersPercent || 0);
+    const bundlerPct = parseFloat(tags.bundlersPercent || 0);
+    const sniperPct = parseFloat(tags.snipersPercent || 0);
+    const freshPct = parseFloat(tags.freshWalletsPercent || 0);
+    const phishPct = parseFloat(tags.suspectedPhishingWalletPercent || 0);
+    const rugPullCount = parseInt(dev.rugPullCount || 0);
+    const totalBundlers = parseInt(bundle.totalBundlers || 0);
+
+    if (rugPullCount > 0) { score -= 30; dangers.push(`Developer has ${rugPullCount} rug pull(s) in history`); }
+    if (devPct > 20) { score -= 20; dangers.push(`Dev holds ${fmtPct(devPct)} of supply`); }
+    else if (devPct > 5) { score -= 10; warnings.push(`Dev holds ${fmtPct(devPct)} of supply`); }
+
+    if (top10Pct > 50) { score -= 15; dangers.push(`Top 10 holders own ${fmtPct(top10Pct)}`); }
+    else if (top10Pct > 30) { score -= 8; warnings.push(`Top 10 holders own ${fmtPct(top10Pct)}`); }
+
+    if (insiderPct > 10) { score -= 12; dangers.push(`Insider percentage: ${fmtPct(insiderPct)}`); }
+    if (bundlerPct > 15) { score -= 15; dangers.push(`Bundler percentage: ${fmtPct(bundlerPct)}`); }
+    else if (bundlerPct > 5) { score -= 8; warnings.push(`Bundler percentage: ${fmtPct(bundlerPct)}`); }
+
+    if (sniperPct > 10) { score -= 10; warnings.push(`Sniper percentage: ${fmtPct(sniperPct)}`); }
+    if (freshPct > 50) { score -= 8; warnings.push(`Fresh wallets: ${fmtPct(freshPct)}`); }
+    if (phishPct > 0) { score -= 15; dangers.push(`Phishing wallet detected: ${fmtPct(phishPct)}`); }
+    if (totalBundlers > 10) { score -= 10; warnings.push(`${totalBundlers} bundlers detected`); }
+
+    score = Math.max(0, score);
+    const color = score >= 70 ? 'var(--green)' : score >= 40 ? 'var(--yellow)' : 'var(--red)';
+    const label = score >= 70 ? 'SAFE' : score >= 40 ? 'CAUTION' : 'DANGER';
+
+    let html = `
+        <div class="risk-meter">
+            <div class="risk-circle" style="border:4px solid ${color};color:${color};font-size:28px">${score}</div>
+            <div style="flex:1">
+                <div style="font-size:18px;font-weight:700;color:${color}">${label}</div>
+                <div class="progress-bar" style="margin-top:4px">
+                    <div class="progress-fill" style="width:${score}%;background:${color}"></div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    if (dangers.length > 0) {
+        html += '<div style="margin-top:12px"><strong style="color:var(--red)">DANGER:</strong><ul style="padding-left:20px;margin-top:4px;font-size:13px;line-height:1.8">';
+        dangers.forEach(d => html += `<li style="color:var(--red)">${d}</li>`);
+        html += '</ul></div>';
+    }
+    if (warnings.length > 0) {
+        html += '<div style="margin-top:8px"><strong style="color:var(--yellow)">WARNING:</strong><ul style="padding-left:20px;margin-top:4px;font-size:13px;line-height:1.8">';
+        warnings.forEach(w => html += `<li style="color:var(--yellow)">${w}</li>`);
+        html += '</ul></div>';
+    }
+    if (dangers.length === 0 && warnings.length === 0) {
+        html += '<div style="margin-top:12px;color:var(--green);font-size:13px">No major risk flags detected.</div>';
+    }
+
+    document.getElementById('security-score').innerHTML = html;
+}
+
+function renderTokenOverview(details) {
+    const d = details.data || {};
+    const m = d.market || {};
+    const social = d.social || {};
+
+    document.getElementById('token-overview').innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <img src="${d.logoUrl || ''}" style="width:48px;height:48px;border-radius:50%;background:var(--bg3)" onerror="this.style.background='var(--bg3)'">
+            <div>
+                <div style="font-size:20px;font-weight:700">${d.symbol || '???'}</div>
+                <div class="small">${d.name || ''}</div>
+            </div>
+        </div>
+        <table>
+            <tr><td class="small">Market Cap</td><td style="text-align:right;font-weight:600">${fmtUsd(m.marketCapUsd)}</td></tr>
+            <tr><td class="small">1h Volume</td><td style="text-align:right">${fmtUsd(m.volumeUsd1h)}</td></tr>
+            <tr><td class="small">1h Txns</td><td style="text-align:right">${m.txCount1h || 0} (Buy: ${m.buyTxCount1h || 0} / Sell: ${m.sellTxCount1h || 0})</td></tr>
+            <tr><td class="small">Bonding %</td><td style="text-align:right">${fmtPct(d.bondingPercent)}</td></tr>
+            <tr><td class="small">Holders</td><td style="text-align:right">${d.tags?.totalHolders || '---'}</td></tr>
+            <tr><td class="small">Creator</td><td style="text-align:right"><span class="addr">${shortAddr(d.creatorAddress)}</span></td></tr>
+            <tr><td class="small">Created</td><td style="text-align:right">${d.createdTimestamp ? new Date(parseInt(d.createdTimestamp)).toLocaleString() : '---'}</td></tr>
+        </table>
+        <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">
+            ${social.x ? `<a href="${social.x}" target="_blank" class="badge badge-blue">Twitter</a>` : ''}
+            ${social.telegram ? `<a href="${social.telegram}" target="_blank" class="badge badge-blue">Telegram</a>` : ''}
+            ${social.website ? `<a href="${social.website}" target="_blank" class="badge badge-blue">Website</a>` : ''}
+            ${social.dexScreenerPaid ? '<span class="badge badge-green">DexScreener Paid</span>' : ''}
+            ${social.communityTakeover ? '<span class="badge badge-yellow">CTO</span>' : ''}
+        </div>
+    `;
+}
+
+function renderDevAnalysis(devInfo) {
+    const d = devInfo.data || {};
+    const launched = d.devLaunchedInfo || {};
+    const holding = d.devHoldingInfo || {};
+
+    const rugPulls = parseInt(launched.rugPullCount || 0);
+    const total = parseInt(launched.totalTokens || 0);
+    const migrated = parseInt(launched.migratedCount || 0);
+    const gems = parseInt(launched.goldenGemCount || 0);
+
+    let repColor = 'var(--green)';
+    let repLabel = 'GOOD';
+    if (rugPulls > 0) { repColor = 'var(--red)'; repLabel = 'DANGEROUS'; }
+    else if (total > 10 && migrated < 2) { repColor = 'var(--yellow)'; repLabel = 'SUSPECT'; }
+
+    document.getElementById('dev-analysis').innerHTML = `
+        <div style="text-align:center;margin-bottom:16px">
+            <div style="font-size:14px;color:${repColor};font-weight:700">${repLabel}</div>
+            <div class="small">Developer Reputation</div>
+        </div>
+        <table>
+            <tr><td class="small">Total Tokens Created</td><td style="text-align:right;font-weight:600">${total}</td></tr>
+            <tr><td class="small">Rug Pulls</td><td style="text-align:right;color:${rugPulls > 0 ? 'var(--red)' : 'var(--green)'}; font-weight:600">${rugPulls}</td></tr>
+            <tr><td class="small">Successfully Migrated</td><td style="text-align:right">${migrated}</td></tr>
+            <tr><td class="small">Golden Gems</td><td style="text-align:right;color:var(--yellow)">${gems}</td></tr>
+        </table>
+        ${holding.devAddress ? `
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div class="small" style="margin-bottom:4px">Dev Wallet</div>
+            <div class="addr">${shortAddr(holding.devAddress)}</div>
+            <div style="margin-top:8px">
+                <span class="small">Holding: </span><strong>${fmtPct(holding.devHoldingPercent)}</strong>
+            </div>
+            ${holding.fundingAddress ? `<div style="margin-top:4px"><span class="small">Funded from: </span><span class="addr">${shortAddr(holding.fundingAddress)}</span></div>` : ''}
+        </div>` : '<div class="small" style="margin-top:12px">No dev holding info available</div>'}
+    `;
+}
+
+function renderBundleAnalysis(bundleInfo) {
+    const d = bundleInfo.data || {};
+    const totalBundlers = parseInt(d.totalBundlers || 0);
+    const athPct = parseFloat(d.bundlerAthPercent || 0);
+    const isRisky = totalBundlers > 5 || athPct > 20;
+
+    document.getElementById('bundle-analysis').innerHTML = `
+        <div style="text-align:center;margin-bottom:16px">
+            <div style="font-size:14px;color:${isRisky ? 'var(--red)' : 'var(--green)'};font-weight:700">
+                ${isRisky ? 'DETECTED' : 'CLEAN'}
+            </div>
+            <div class="small">Bundle/Sniper Status</div>
+        </div>
+        <table>
+            <tr><td class="small">Total Bundlers</td><td style="text-align:right;font-weight:600;color:${totalBundlers > 5 ? 'var(--red)' : 'var(--text)'}">${totalBundlers}</td></tr>
+            <tr><td class="small">Bundler ATH %</td><td style="text-align:right">${fmtPct(athPct)}</td></tr>
+            <tr><td class="small">Bundled Value</td><td style="text-align:right">${d.bundledValueNative || '0'} native</td></tr>
+            <tr><td class="small">Bundled Tokens</td><td style="text-align:right">${d.bundledTokenAmount || '0'}</td></tr>
+        </table>
+        <div style="margin-top:12px">
+            <div class="small">Bundler Impact</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width:${Math.min(athPct, 100)}%;background:${athPct > 20 ? 'var(--red)' : athPct > 10 ? 'var(--yellow)' : 'var(--green)'}"></div>
+            </div>
+        </div>
+    `;
+}
+
+function renderSimilarTokens(similar) {
+    const tokens = similar.data || [];
+    if (!Array.isArray(tokens) || tokens.length === 0) {
+        document.getElementById('similar-tokens').innerHTML = '<div class="empty" style="padding:20px">No similar tokens found from this developer</div>';
+        return;
+    }
+
+    let html = '';
+    tokens.forEach(t => {
+        const age = t.createdTimestamp ? Math.floor((Date.now() - parseInt(t.createdTimestamp)) / 3600000) + 'h ago' : '---';
+        html += `<div class="token-row" style="padding:8px">
+            <img class="token-icon" src="${t.tokenLogo || ''}" style="width:24px;height:24px" onerror="this.style.background='var(--bg3)'">
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:13px">${t.tokenSymbol || '???'}</div>
+                <div class="addr" style="font-size:11px">${shortAddr(t.tokenAddress)}</div>
+            </div>
+            <div style="text-align:right">
+                <div style="font-size:12px">${fmtUsd(t.marketCapUsd)}</div>
+                <div class="small">${age}</div>
+            </div>
+        </div>`;
+    });
+    document.getElementById('similar-tokens').innerHTML = html;
+}
+
+function renderHolderRisks(details) {
+    const tags = details.data?.tags || {};
+
+    const metrics = [
+        { label: 'Top 10 Holders', value: tags.top10HoldingsPercent, threshold: [30, 50] },
+        { label: 'Dev Holdings', value: tags.devHoldingsPercent, threshold: [5, 20] },
+        { label: 'Insiders', value: tags.insidersPercent, threshold: [5, 10] },
+        { label: 'Bundlers', value: tags.bundlersPercent, threshold: [5, 15] },
+        { label: 'Snipers', value: tags.snipersPercent, threshold: [5, 10] },
+        { label: 'Fresh Wallets', value: tags.freshWalletsPercent, threshold: [30, 50] },
+        { label: 'Phishing Wallets', value: tags.suspectedPhishingWalletPercent, threshold: [0.1, 1] }
+    ];
+
+    let html = '<div class="grid3" style="gap:12px">';
+    metrics.forEach(m => {
+        const val = parseFloat(m.value || 0);
+        const color = val > m.threshold[1] ? 'var(--red)' : val > m.threshold[0] ? 'var(--yellow)' : 'var(--green)';
+        html += `<div class="stat-card">
+            <div class="stat-label">${m.label}</div>
+            <div style="font-size:20px;font-weight:700;color:${color};margin:4px 0">${fmtPct(val)}</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width:${Math.min(val, 100)}%;background:${color}"></div>
+            </div>
+        </div>`;
+    });
+    html += `<div class="stat-card">
+        <div class="stat-label">Total Holders</div>
+        <div style="font-size:20px;font-weight:700;color:var(--accent);margin:4px 0">${tags.totalHolders || '---'}</div>
+    </div>`;
+    html += '</div>';
+
+    document.getElementById('holder-risks').innerHTML = html;
+}
+</script>
+</body>
+</html>

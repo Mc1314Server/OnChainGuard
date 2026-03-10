@@ -1,0 +1,15 @@
+{
+  "name": "onchain-detective",
+  "version": "1.0.0",
+  "description": "AI On-chain Detective & Meme Coin Security Scanner powered by OKX OnchainOS",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "https-proxy-agent": "^7.0.6"
+  }
+}
