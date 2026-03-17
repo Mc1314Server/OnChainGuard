@@ -1,0 +1,31 @@
+{
+  "name": "onchaindetective",
+  "version": "1.0.0",
+  "description": "AI 链上侦探 & Meme 币安全扫描器 - 基于 Binance Web3 Skills API",
+  "main": "onchaindetective.js",
+  "bin": {
+    "onchaindetective": "./onchaindetective.js"
+  },
+  "scripts": {
+    "start": "node onchaindetective.js"
+  },
+  "keywords": [
+    "blockchain",
+    "security",
+    "meme",
+    "detective",
+    "onchain",
+    "binance",
+    "ai-agent",
+    "web3"
+  ],
+  "author": "YOUR_GITHUB_USERNAME",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/binance/binance-skills-hub.git"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
